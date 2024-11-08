@@ -1,6 +1,30 @@
 import cv2
 import numpy as np
 
+def calibrate():
+    get_image("calibration.jpg")
+    image = cv2.imread("calibration.jpg")
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    lower_green = np.array([35, 100, 100])
+    upper_green = np.array([85, 255, 255])
+
+    mask = cv2.inRange(hsv, lower_green, upper_green)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    points = []
+    for contour in contours:
+        M = cv2.moments(contour)
+        if M["m00"] != 0:
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            points.append((cX, cY))
+    if len(points) != 2:
+        print("Error: Could not detect the calibration points.")
+        exit()
+    
+    return points
+
 def compute_center():
     image = cv2.imread("bowling_pins.jpg")
 
@@ -46,23 +70,26 @@ def compute_center():
     cv2.imshow("Detected Points and Center", image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    return [center_x, center_y]
     
 
-def get_image():
+def get_image(name):
     cap = cv2.VideoCapture(1)
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         exit()
     ret, frame = cap.read()
     cv2.imshow('Webcam', frame)
-    filename = 'bowling_pins.jpg'
-    cv2.imwrite(filename, frame)
-    print(f"Picture saved as {filename}")
+    
+    cv2.imwrite(name, frame)
+    print(f"Picture saved as {name}")
     cv2.destroyAllWindows()
 
 def main():
-    get_image()
-    compute_center()
+    calibration_points =calibrate()
+    get_image("bowling_pins.jpg")
+    center_point=compute_center()
+    
 
 if __name__ =="__main__":
     main()
