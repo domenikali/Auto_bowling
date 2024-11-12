@@ -2,11 +2,10 @@ import cv2
 import numpy as np
 
 def calibrate():
-    get_image("calibration.jpg")
     image = cv2.imread("calibration.jpg")
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    lower_green = np.array([35, 100, 100])
-    upper_green = np.array([85, 255, 255])
+    lower_green = np.array([30, 50, 50])
+    upper_green = np.array([90, 255, 255])
 
     mask = cv2.inRange(hsv, lower_green, upper_green)
 
@@ -86,9 +85,39 @@ def get_image(name):
     cv2.destroyAllWindows()
 
 def main():
+    #get_image("calibration.jpg")
     calibration_points =calibrate()
-    get_image("bowling_pins.jpg")
+    print("calibration is done, place pins\n")
+    cv2.waitKey(0)
+    #get_image("bowling_pins.jpg")
     center_point=compute_center()
+    calibration_distance = ((calibration_points[0][0] - calibration_points[1][0])**2 + (calibration_points[0][1] - calibration_points[1][1])**2)**0.5
+    center_line = calibration_distance*(24//5)
+    image = cv2.imread("bowling_pins.jpg")
+    
+    delta_x = calibration_points[1][0] - calibration_points[0][0]
+    delta_y = calibration_points[1][1] - calibration_points[0][1]
+    angle = np.arctan2(delta_y, delta_x)
+
+    # Calculate the middle point
+    middle_point = ((calibration_points[0][0] + calibration_points[1][0]) // 2, (calibration_points[0][1] + calibration_points[1][1]) // 2)
+
+    # Calculate the second point using the angle
+    length = calibration_distance*24/5  # Length of the line
+    ball_point = (int(middle_point[0] + length * np.sin(-angle)), int(middle_point[1] + length * np.cos(-angle)))
+
+
+    middle_point=((calibration_points[0][0]+calibration_points[1][0])//2, (calibration_points[0][1]+calibration_points[1][1])//2)
+    cv2.circle(image, center_point, 5, (0, 255, 0), -1)  # Green dots on detected points
+    cv2.line(image, middle_point, ball_point, (0, 0, 255), 2)
+    cv2.line(image, calibration_points[0], calibration_points[1], (0, 0, 255), 2)
+    cv2.line(image,calibration_points[0],ball_point,(0,0,255),2)
+    cv2.line(image,calibration_points[1],ball_point,(0,0,255),2)
+    cv2.line(image,center_point,ball_point,(0,255,0),3)
+    cv2.imshow("Detected Points and Center", image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
     
 
 if __name__ =="__main__":
